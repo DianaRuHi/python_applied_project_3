@@ -1,0 +1,81 @@
+version: "3.7"
+services:
+  db_shortener:
+    image: postgres:16
+    container_name: db_shortener
+    command: -p 1221
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=shortener
+    expose:
+      - 1221
+    ports:
+      - 1221:1221
+
+  redis_shortener:
+    image: redis:7
+    container_name: redis_shortener
+    command: --port 5370
+    expose:
+      - 5370
+    ports:
+      - 5370:5370
+
+  app:
+    build:
+      context: .
+    container_name: project_3
+    command: ["/project_3/docker/app.sh"]
+    ports:
+      - 9999:8000
+    environment:
+      - DB_HOST=db_shortener
+      - DB_PORT=1221
+      - DB_USER=postgres
+      - DB_PASS=postgres
+      - DB_NAME=shortener
+      - REDIS_HOST=redis_shortener
+      - REDIS_PORT=5370
+      - SECRET=your-secret-key-12345
+    depends_on:
+      - db_shortener
+      - redis_shortener
+
+  celery:
+    build:
+      context: .
+    container_name: celery_app
+    command: ["/project_3/docker/celery.sh", "celery"]
+    environment:
+      - DB_HOST=db_shortener
+      - DB_PORT=1221
+      - DB_USER=postgres
+      - DB_PASS=postgres
+      - DB_NAME=shortener
+      - REDIS_HOST=redis_shortener
+      - REDIS_PORT=5370
+      - SECRET=your-secret-key-12345
+    depends_on:
+      - redis_shortener
+      - db_shortener
+
+  flower:
+    build:
+      context: .
+    container_name: flower_app
+    command: ["/project_3/docker/celery.sh", "flower"]
+    environment:
+      - DB_HOST=db_shortener
+      - DB_PORT=1221
+      - DB_USER=postgres
+      - DB_PASS=postgres
+      - DB_NAME=shortener
+      - REDIS_HOST=redis_shortener
+      - REDIS_PORT=5370
+      - SECRET=your-secret-key-12345
+    depends_on:
+      - redis_shortener
+      - celery
+    ports:
+      - 8888:5555
