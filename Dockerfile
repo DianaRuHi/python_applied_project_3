@@ -4,6 +4,8 @@ RUN mkdir /project_3
 
 WORKDIR /project_3
 
+ENV PYTHONPATH="/project_3"
+
 COPY requirements.txt .
 
 RUN pip install -r requirements.txt
